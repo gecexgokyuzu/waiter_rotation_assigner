@@ -18,32 +18,27 @@ sections = {
     'Middle': {'location': 'inside', 'capacity': 2, 'importance': False},
     '13-14-15': {'location': 'inside', 'capacity': 1, 'importance': True},
     '16-17-18': {'location': 'inside', 'capacity': 1, 'importance': True},
-    'SmokingSection': {'location': 'inside', 'capacity': 2, 'importance': False},
+    'SmokingSection': {'location': 'inside', 'capacity': 1, 'importance': False},
 }
-priority_waiters = []
+section_assignments = dict.fromkeys(sections.keys(), None)
 unimportant_sections = []
+unimportant_sections_dict = {}
 important_sections = []
+important_sections_dict = {}
 outside_sections = []
 inside_sections = []
-full_sections = []
-important_section_capacity = 0
-high_capacity_sections = []
-unimportant_section_capacity = 0
-section_assignments = dict.fromkeys(sections.keys(), None)
-assigned_waiters = []
-for section_key, section_values in sections.items():
-    if section_values["location"] == "outside":
+for section_key, section_value in sections.items():
+    if section_value["location"] == "outside":
         outside_sections.append(section_key)
     else:
         inside_sections.append(section_key)
-    if not section_values["importance"]:
-        unimportant_sections.append(section_key)
-        unimportant_section_capacity += section_values['capacity']
-    else:
-        important_section_capacity += section_values["capacity"]
+    if section_value["importance"]:
         important_sections.append(section_key)
-    if section_values['capacity'] > 1:
-        high_capacity_sections.append(section_key)
+        important_sections[section_key] = section_value
+    else:
+        unimportant_sections.append(section_key)
+        unimportant_sections[section_key] = section_value
+        
 try:
     waiter_history_df = pd.read_excel("./Data/RotationCopy.xlsx", index_col=0)
     waiter_history_dict = waiter_history_df.to_dict("list")
@@ -52,26 +47,36 @@ except:
         rotation = pd.DataFrame(columns=waiters)
         rotation.index.name = "Date"
         rotation.to_excel("./Data/Rotation.xlsx")
-for waiter, waiter_history in waiter_history_dict.items():
-    if waiter_history[-2] in high_capacity_sections or waiter_history[:-2] in unimportant_sections:
-        priority_waiters.append(waiter)
+print(waiter_history_dict)
 # ------------------------------------------- FUNCTIONS ------------------------------------------- #
+
+def CheckAvailableWaiter(section_key, section_value):
+    desired_section_count = {}
+    shuffled_waiter_history_dict = {k: waiter_history_dict[k] for k in random.sample(sorted(waiter_history_dict.keys()), len(waiter_history_dict))}
+    for waiter, history in shuffled_waiter_history_dict.items():
+        if (sections[history[-1]]["location"] == section_value["location"]) or not waiter in waiters:
+            continue
+        history_count = history.count(section_key)
+        desired_section_count.update({f"{waiter}" : history_count})
+    sorted_desired_section_count = sorted(desired_section_count.items(), key=lambda x:x[1], reverse=True)
+        
+    try:
+        return sorted_desired_section_count[-1][0]
+    except:
+        pass
 
 def RotationLog(section_assignments):
     waiter_assignments = {}
-    for section_key, section_values in section_assignments.items():
-        if section_values == None:
-            section_values = []
-        for value in section_values:
+    for section_key, section_value in section_assignments.items():
+        if section_value == None:
+            section_value = []
+        for value in section_value:
             waiter_assignments.update({f"{value}": section_key})
     new_row = pd.DataFrame(waiter_assignments, index=[today])
     rotation_df = pd.read_excel("./Data/RotationCopy.xlsx", index_col=0)
     rotation_df.index.name = "Date"
     rotation_df = pd.concat([rotation_df, new_row])
     rotation_df.to_excel("./Data/RotationCopy.xlsx", index_label="Date", sheet_name="Cycle")
-    
-    # -------------------- color the cells -------------------- #
-
     styleWorkbook = openpyxl.load_workbook("./Data/RotationCopy.xlsx")
     styleSheet = styleWorkbook["Cycle"]
     for column in styleSheet.iter_cols():
@@ -83,54 +88,49 @@ def RotationLog(section_assignments):
                     styleSheet[cell.coordinate].fill = PatternFill(start_color="BC544B", end_color="BC544B", fill_type="solid")
     styleWorkbook.save("./Data/RotationCopy.xlsx")
 
-def CheckAvailability(waiter, section_values, section_key):
-    last_sec = waiter_history_dict[waiter][-1]
-    last_sec_loc = sections[last_sec]["location"]
-    wanted_sec_loc = section_values["location"]
-    waiter_history_list = waiter_history_dict[waiter]
-    waiter_history_list.reverse()
-    print(f"waiters last section is : {last_sec}. and has worked in {last_sec_loc}, looking for : {wanted_sec_loc}")
-    if wanted_sec_loc == last_sec_loc:
-        print("FAILED")
-        return False
-    print(f"capacity is : {section_values['capacity']}, waiter has worked : {waiter_history_list.count(section_key)} times.")
-    if section_values["capacity"] == waiter_history_list.count(section_key):
-        print("FAILED")
-        return False
-    print(f"waiters last {wanted_sec_loc} section is {waiter_history_list[:-2]}")
-    if not section_key in waiter_history_list[:-2] and (waiter in priority_waiters or all(item in priority_waiters for item in assigned_waiters)):
-        return True
-    else:
-        return False
-
 # ------------------------------------------- MAIN ------------------------------------------- #
-i = 0
-while len(assigned_waiters) < (important_section_capacity + unimportant_section_capacity) and i < 2:
-    i += 1
-    for section_key, section_values in sections.items():
-        if section_key in full_sections:
+
+while waiters:
+    for section_key, section_value in important_sections_dict.items():
+        if section_value["capacity"] == 0:
             continue
-        for waiter in waiters:
-            if waiter in assigned_waiters or section_values['capacity'] == 0:
-                if section_values['capacity'] == 0:
-                    full_sections.append(section_key)
-                    break
-                continue
-            if not CheckAvailability(waiter, section_values, section_key):
-                continue
-            if section_values["capacity"] > 0 and section_assignments[f"{section_key}"] == None:
-                section_assignments.update({f"{section_key}": [waiter]})
-                assigned_waiters.append(waiter)
-                section_values["capacity"] -= 1
-                continue
-            elif section_values["capacity"] > 0 and section_assignments[f"{section_key}"] != None:
-                already_assigned = section_assignments[f"{section_key}"]
-                already_assigned.append(waiter)
-                section_assignments.update({f"{section_key}": already_assigned})
-                assigned_waiters.append(waiter)
-                section_values['capacity'] -= 1
-                continue
-            else:
-                break
+        if not waiters:
+            break
+        waiter = CheckAvailableWaiter(section_key, section_value)
+        if section_value["capacity"] > 0 and section_assignments[f"{section_key}"] == None:
+            section_assignments.update({f"{section_key}": [waiter]})
+            waiters.remove(waiter)
+            section_value["capacity"] -= 1
+            continue
+        elif section_value["capacity"] > 0 and section_assignments[f"{section_key}"] != None:
+            already_assigned = section_assignments[f"{section_key}"]
+            already_assigned.append(waiter)
+            section_assignments.update({f"{section_key}": already_assigned})
+            waiters.remove(waiter)
+            section_value['capacity'] -= 1
+            continue
+        else:
+            break
+    for section_key, section_value in unimportant_sections_dict.items():
+        if section_value["capacity"] == 0:
+            continue
+        if not waiters:
+            break
+        waiter = CheckAvailableWaiter(section_key, section_value)
+        if section_value["capacity"] > 0 and section_assignments[f"{section_key}"] == None:
+            section_assignments.update({f"{section_key}": [waiter]})
+            waiters.remove(waiter)
+            section_value["capacity"] -= 1
+            continue
+        elif section_value["capacity"] > 0 and section_assignments[f"{section_key}"] != None:
+            already_assigned = section_assignments[f"{section_key}"]
+            already_assigned.append(waiter)
+            section_assignments.update({f"{section_key}": already_assigned})
+            waiters.remove(waiter)
+            section_value['capacity'] -= 1
+            continue
+        else:
+            break
+
 
 RotationLog(section_assignments)
