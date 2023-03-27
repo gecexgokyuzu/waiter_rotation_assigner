@@ -18,7 +18,7 @@ sections = {
     'Middle': {'location': 'inside', 'capacity': 2, 'importance': False},
     '13-14-15': {'location': 'inside', 'capacity': 1, 'importance': True},
     '16-17-18': {'location': 'inside', 'capacity': 1, 'importance': True},
-    'SmokingSection': {'location': 'inside', 'capacity': 1, 'importance': False},
+    'SmokingSection': {'location': 'inside', 'capacity': 2, 'importance': False},
 }
 section_assignments = dict.fromkeys(sections.keys(), None)
 unimportant_sections = []
@@ -81,11 +81,15 @@ def RotationLog(section_assignments):
     styleSheet = styleWorkbook["Cycle"]
     for column in styleSheet.iter_cols():
         for cell in column:
-            if cell.value not in unimportant_sections:
-                if cell.value in inside_sections:
-                    styleSheet[cell.coordinate].fill = PatternFill(start_color="AEF359", end_color="AEF359", fill_type="solid")
-                elif cell.value in outside_sections:
-                    styleSheet[cell.coordinate].fill = PatternFill(start_color="BC544B", end_color="BC544B", fill_type="solid")
+            #if cell.value not in unimportant_sections:
+            if cell.value in inside_sections:
+                styleSheet[cell.coordinate].fill = PatternFill(start_color="AEF359", end_color="AEF359", fill_type="solid")
+            elif cell.value in outside_sections:
+                styleSheet[cell.coordinate].fill = PatternFill(start_color="BC544B", end_color="BC544B", fill_type="solid")
+            if cell.value == "NewSection":
+                styleSheet[cell.coordinate].fill = PatternFill(start_color="3c3cff", end_color="3c3cff", fill_type="solid")
+            elif cell.value == "SmokingSection":
+                styleSheet[cell.coordinate].fill = PatternFill(start_color="ff9600", end_color="ff9600", fill_type="solid")
     styleWorkbook.save("./Data/RotationCopy.xlsx")
 
 # ------------------------------------------- MAIN ------------------------------------------- #
