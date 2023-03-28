@@ -1,28 +1,37 @@
-Restaurant Waiter Scheduler
+Waiter Rotation Scheduler
 
-This is a Python script for scheduling restaurant waiters based on their history and table sections. The script uses the pandas and openpyxl libraries for data manipulation and Excel file handling.
+This Python script helps schedule waiters' rotations in a restaurant by assigning them to different sections of the establishment. The sections have different locations, capacities, and levels of importance.
 
-Setup------------
+Table of Contents
 
-Install the required libraries with pip install pandas openpyxl.
+Installation
+Usage
+Contributing
+License
+Installation
 
-How to use------------
+Clone this repository to your local machine.
+Install the required dependencies by running pip install pandas openpyxl in your terminal.
+Usage
 
-1. Open the RotationCopy.xlsx file in the Data folder and update the sheet named Cycle with the date and the sections where the waiters were assigned for the day.
+Open the waiter_rotation_assigner.py file.
+Modify the waiters and sections variables to match your restaurant's needs.
+Run the script by running python waiter_rotation_assigner.py in your terminal.
+The script will assign waiters to sections based on the following criteria:
 
-2. Run the script by executing python scheduler.py in the terminal.
+Waiters can only be assigned to sections that have a capacity greater than 0.
+Waiters cannot be assigned to sections they have already worked in.
+Waiters can only be assigned to sections with the same location as their most recent section if no other sections are available.
+The script will output the waiter assignments for the current day and log them in an Excel spreadsheet located in the ./Data directory.
 
-3. The script will assign waiters to sections according to the rules in the CheckAvailableWaiter() function and update the section_assignments dictionary.
+Contributing
 
-4. The updated section_assignments dictionary will be logged to the RotationCopy.xlsx file under the Cycle sheet along with the date.
+Contributions are welcome! Please follow the steps below to contribute to this project:
 
-5. The cells in the RotationCopy.xlsx file will be colored to indicate the location of the section assigned to the waiter.
+Fork this repository to your own GitHub account and clone it to your local machine.
+Create a new branch and make your changes.
+Push your changes to your forked repository.
+Create a pull request to merge your changes into the main repository.
+License
 
-Dependencies------------
-
-This code has the following dependencies:
-
-pandas
-openpyxl
-
-This code is licensed under the MIT License.
+This project is licensed under the MIT License.
