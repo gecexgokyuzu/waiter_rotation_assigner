@@ -1,4 +1,5 @@
 # Waiter Rotation Scheduler
+### Version: 0.2
 
 This Python script helps schedule waiters' rotations in a restaurant by assigning them to different sections of the establishment. The sections have different locations, capacities, and levels of importance.
 
